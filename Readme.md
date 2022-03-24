@@ -4,14 +4,16 @@
 
 # 使い方
 ```
-Numbering.exe [files]
+Numbering.exe [options] [files]
+option
+  -d 基準となるフォルダー(省略可能)
 files
   ファイルのパス
 ```
 
 ```
 example
-  Numbering.exe テキストファイル.txt 音声ファイル.wav
+  Numbering.exe -d 基準となるフォルダー テキストファイル.txt 音声ファイル.wav
 ```
 
 #
