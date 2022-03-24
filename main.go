@@ -17,7 +17,14 @@ func main() {
 		Description:     "---",
 		Version:         Version,
 		HideHelpCommand: true,
-		Action:          appfunc,
+		Flags: []cli.Flag{
+			&cli.PathFlag{
+				Name:    "directory",
+				Aliases: []string{"d", "dir"},
+				Usage:   "基準になるディレクトリを指定します。",
+			},
+		},
+		Action: appfunc,
 	}
 
 	err := app.Run(os.Args)
@@ -27,42 +34,55 @@ func main() {
 }
 
 func appfunc(c *cli.Context) error {
-	args := c.Args().Slice()
-
-	if len(args) < 1 {
+	paths := c.Args().Slice()
+	if len(paths) < 1 {
 		return errors.New("at least one path is required")
 	}
 
-	num := 0
+	num, err := getNumber(c.Path("directory"), paths[0])
+	if err != nil {
+		return err
+	}
 
-	for i, v := range args {
-		_, err := os.Stat(v)
+	for _, path := range paths {
+		_, err := os.Stat(path)
 		if err != nil {
 			return err
 		}
 
-		if i == 0 {
-			p := filepath.Join(
-				filepath.Dir(v),
-				"*"+filepath.Ext(v))
-			fl, err := filepath.Glob(p)
-
-			if err != nil {
-				return err
-			}
-
-			num = len(fl)
-		}
-
 		err = os.Rename(
-			v,
+			path,
 			filepath.Join(
-				filepath.Dir(v),
-				fmt.Sprintf("%04d", num)+"_"+filepath.Base(v)))
+				filepath.Dir(path),
+				fmt.Sprintf("%04d", num)+"_"+filepath.Base(path)))
 		if err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func getNumber(basedir string, path string) (int, error) {
+	if basedir != "" {
+		_, err := os.Stat(basedir)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	topnum := 0
+
+	if basedir == "" {
+		basedir = filepath.Dir(path)
+	} else {
+		topnum = 1
+	}
+
+	files, err := filepath.Glob(filepath.Join(basedir, "*"+filepath.Ext(path)))
+	if err != nil {
+		return 0, err
+	}
+
+	return topnum + len(files), err
 }
